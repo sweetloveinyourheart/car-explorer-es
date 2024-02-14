@@ -1,6 +1,7 @@
 package main
 
 import (
+	"book-explorer-es/internal/database"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +13,10 @@ func main() {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
 
+	// init database connection
+	database.InitPostgreSQLConnection()
+	database.Migrate()
+
 	// create fiber instances
 	app := fiber.New()
 
@@ -21,5 +26,8 @@ func main() {
 
 	// listen to http request
 	port := viper.Get("PORT")
+	if port == nil {
+		port = "8080"
+	}
 	app.Listen(fmt.Sprintf(":%s", port))
 }
