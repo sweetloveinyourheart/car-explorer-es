@@ -47,5 +47,8 @@ func Migrate() {
 
 	if err != nil {
 		log.Fatal("Migrate DB failed")
+		return
 	}
+
+	log.Info("PostgreSQL auto migrate successfully")
 }
