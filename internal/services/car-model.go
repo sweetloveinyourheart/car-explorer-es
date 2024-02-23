@@ -3,6 +3,7 @@ package services
 import (
 	"book-explorer-es/internal/database"
 	"book-explorer-es/internal/models"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -16,16 +17,24 @@ type ICarModelService interface {
 }
 
 type CarModelService struct {
-	db *gorm.DB
+	db              *gorm.DB
+	producerService IProducerService
 }
 
 func NewCarModelService() ICarModelService {
 	return &CarModelService{
-		db: database.PostgresDB,
+		db:              database.PostgresDB,
+		producerService: NewProducerService(),
 	}
 }
 
 func (cs *CarModelService) CreateCarModel(carModel *models.CarModel) error {
+	producer, _ := cs.producerService.GetProducer(carModel.Producer.ID)
+	if producer == nil {
+		err := fmt.Errorf("producer is not exist")
+		return err
+	}
+
 	return cs.db.Create(carModel).Error
 }
 
@@ -49,7 +58,24 @@ func (cs *CarModelService) GetAllCarModels() ([]models.CarModel, error) {
 }
 
 func (cs *CarModelService) UpdateCarModel(carModel *models.CarModel) error {
-	return cs.db.Model(carModel).Updates(carModel).Error
+	producer, err := cs.producerService.GetProducer(carModel.Producer.ID)
+	if producer == nil && err == nil {
+		err = fmt.Errorf("producer is not exist")
+		return err
+	}
+
+	if err != nil {
+		err = fmt.Errorf("update existed car failed with err %e", err)
+		return err
+	}
+
+	err = cs.db.Model(carModel).Updates(carModel).Error
+	if err != nil {
+		err = fmt.Errorf("update existed car failed with err %e", err)
+		return err
+	}
+
+	return err
 }
 
 func (cs *CarModelService) DeleteCarModel(id uint) error {
@@ -58,5 +84,11 @@ func (cs *CarModelService) DeleteCarModel(id uint) error {
 			ID: id,
 		},
 	}
-	return cs.db.Delete(carModel).Error
+
+	err := cs.db.Delete(carModel).Error
+	if err != nil {
+		err = fmt.Errorf("delete car failed")
+	}
+
+	return err
 }

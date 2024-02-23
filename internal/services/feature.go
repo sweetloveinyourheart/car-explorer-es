@@ -10,6 +10,7 @@ import (
 type IFeatureService interface {
 	CreateFeature(feature *models.Feature) error
 	GetFeature(id uint) (*models.Feature, error)
+	GetFeatures(ids []uint) ([]models.Feature, error)
 	GetAllFeatures() ([]models.Feature, error)
 	UpdateFeature(feature *models.Feature) error
 	DeleteFeature(id uint) error
@@ -43,6 +44,14 @@ func (ps *FeatureService) GetFeature(id uint) (*models.Feature, error) {
 func (ps *FeatureService) GetAllFeatures() ([]models.Feature, error) {
 	features := []models.Feature{}
 	if err := ps.db.Find(&features).Error; err != nil {
+		return nil, err
+	}
+	return features, nil
+}
+
+func (ps *FeatureService) GetFeatures(ids []uint) ([]models.Feature, error) {
+	features := []models.Feature{}
+	if err := ps.db.Find(&features, "id IN (?)", ids).Error; err != nil {
 		return nil, err
 	}
 	return features, nil

@@ -3,6 +3,7 @@ package services
 import (
 	"book-explorer-es/internal/database"
 	"book-explorer-es/internal/models"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -16,16 +17,41 @@ type ICarService interface {
 }
 
 type CarService struct {
-	db *gorm.DB
+	db              *gorm.DB
+	carModelService ICarModelService
+	featureService  IFeatureService
 }
 
 func NewCarService() ICarService {
 	return &CarService{
-		db: database.PostgresDB,
+		db:              database.PostgresDB,
+		carModelService: NewCarModelService(),
+		featureService:  NewFeatureService(),
 	}
 }
 
 func (cs *CarService) CreateCar(car *models.Car) error {
+	// Get car model
+	carModel, _ := cs.carModelService.GetCarModel(car.CarModel.ID)
+	if carModel == nil {
+		err := fmt.Errorf("car model is not exist")
+		return err
+	}
+
+	// Get car feature
+	carFeatures := make([]uint, len(car.Features))
+	for i, feature := range car.Features {
+		carFeatures[i] = feature.ID
+	}
+	features, _ := cs.featureService.GetFeatures(carFeatures)
+	if len(features) == 0 {
+		err := fmt.Errorf("no features found")
+		return err
+	}
+
+	car.CarModelID = carModel.ID
+	car.Features = features
+
 	return cs.db.Create(car).Error
 }
 
